@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <script src="https://cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.5/all/gauge.min.js"></script>
+    <script
+      src="https://code.jquery.com/jquery-3.3.1.min.js"
+      integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+      crossorigin="anonymous"></script>
+    <title>Hautomakone</title>
+    <style type="text/css">
+.m {
+  margin:2em;
+}
+.flex {
+  display:flex; flex-wrap: wrap; justify-content: center;
+}
+input {
+  border-radius:0.5em; width:5em; margin:1em;
+}
+form > div {
+  width:20em; padding:1em; margin:1em; border: 2px solid black; border-radius:2em;
+}
+    </style>
+  </head>
+  <body style="background-color:black">
+
+
+    <div style="padding: 5em; background: gold; border: 1em solid black; border-radius: 5em;">
+      <h1>Hautomakoneen säädöt</h1>
+      <p>
+        Kanojen haudonta kestää 19-22vrk.<br>
+        Ideaalilämpötila 37,5 astetta ja kosteus 50-55% RH. Päivää ennen kuoriutumista kosteus nostetaan 70-75% RH. Munia käännetään vähintään kolmesti päivässä. Haudonnan ensimmäisenä päivänä munia ei käännetä, ja kääntö tulee lopettaa haudonnan lopulla 18. päivän jälkeen.</p>
+      <br><br>
+
+
+      <div class="flex">
+        <div class="m" style="width:300px">
+          <canvas id="humidity"
+                  data-type="radial-gauge"
+                  data-width="300"
+                  data-height="300"
+                  data-value-int="2"
+                  data-value-dec="2"
+                  data-units="% RH"
+                  data-title="false"
+                  data-min-value="0"
+                  data-max-value="100"
+                  data-major-ticks="0,20,40,60,80,100"
+                  data-minor-ticks="2"
+                  data-stroke-ticks="false"
+                  data-highlights-width=8
+                  data-highlights='[
+                  { "from": 0, "to": 49, "color": "rgba(255,10,10,0.8)" },
+                  { "from": 50, "to": 55, "color": "rgba(0,255,0,0.8)" },
+                  { "from": 56, "to": 69, "color": "rgba(255,255,10,0.8)" },
+                  { "from": 70, "to": 75, "color": "rgba(0,255,0,0.8)" },
+                  { "from": 76, "to": 100, "color": "rgba(255,10,10,0.8)" }
+                  ]'
+                  data-color-plate="#224"
+                  data-color-major-ticks="#f5f5f5"
+                  data-color-minor-ticks="#ddd"
+                  data-color-title="#fff"
+                  data-color-units="#ccc"
+                  data-color-numbers="#eee"
+                  data-color-needle-start="rgba(240, 128, 128, 1)"
+                  data-color-needle-end="rgba(255, 160, 122, .9)"
+                  data-value-box="true"
+                  data-animation-rule="bounce"
+                  data-animation-duration="500"
+                  data-font-value="Led"
+                  data-animated-value="true"
+                  ></canvas>
+        </div>
+        <div class="m" style="width:160px">
+          <canvas id="temp"
+                  data-type="linear-gauge"
+                  data-min-value="30"
+                  data-max-value="40"                       
+                  data-width="160"
+                  data-height="300"
+                  data-border-radius="20"
+                  data-borders="0"
+                  data-bar-stroke-width="20"
+                  data-minor-ticks="5"
+                  data-major-ticks="30,35,40"
+                  data-units="°C"
+                  data-color-value-box-shadow="false"
+                  data-value-int="2"
+                  data-value-dec="2"
+                  data-highlights='[
+                  { "from": 37.2, "to": 38.8, "color": "rgba(0,255,0,0.8)" },
+                  { "from": 39, "to": 40, "color": "rgba(255,10,10,0.8)" }
+                  ]'
+                  ></canvas>
+        </div>
+        <div class="m" style="width:300px">
+          <canvas id="power"
+                  data-type="radial-gauge"
+                  data-width="300"
+                  data-height="300"
+                  data-value-int="2"
+                  data-value-dec="1"
+                  data-units="% HEATER"
+                  data-title="false"
+                  data-min-value="0"
+                  data-max-value="100"
+                  data-major-ticks="0,20,40,60,80,100"
+                  data-minor-ticks="2"
+                  data-stroke-ticks="false"
+                  data-color-plate="#822"
+                  data-color-major-ticks="#f5f5f5"
+                  data-color-minor-ticks="#ddd"
+                  data-color-title="#fff"
+                  data-color-units="#ccc"
+                  data-color-numbers="#eee"
+                  data-color-needle-start="rgba(240, 128, 128, 1)"
+                  data-color-needle-end="rgba(255, 160, 122, .9)"
+                  data-highlights-width=2
+                  data-value-box="true"
+                  data-animation-rule="bounce"
+                  data-animation-duration="500"
+                  data-font-value="Led"
+                  data-animated-value="true"
+                  ></canvas>
+        </div>
+
+      </div>
+
+      <p style="color:goldenrod; text-align: center;"><i> Tiedot päivitetty: <span id="time">ei koskaan</span></i>
+
+
+
+
+      <div>
+        <form class="flex" action="./save">
+          <div>
+            Tavoitelämpötila:    
+            <input type="number" 
+                   name="setpoint" 
+                   id="setpoint" 
+                   step="0.1" 
+                   min="0" 
+                   max="38.8" /><br>
+                   Maksimiteho:    
+             <input type="number" 
+                    name="maxpower" 
+                    id="maxpower" 
+                    step="0.01" 
+                    min="0" 
+                    max="1" /><br>
+                    Lämmittimen Kp:    
+              <input type="number" 
+                     name="kp"
+                     id="kp" 
+                     step="0.1" 
+                     max="1000" /><br>
+                     Lämmittimen Ki:    
+               <input type="number" 
+                      name="ki" 
+                      id="ki" 
+                      step="0.01" /><br>
+                      Lämmittimen Kd:    
+                <input type="number" 
+                       name="kd" 
+                       id="kd" 
+                       step="0.01" /><br>
+
+          </div>
+
+          <div>
+            Kääntöaste:   
+          <input type="number" 
+                 name="turnangle" 
+                 id="turnangle" 
+                 step="5" ><br>
+                 Kääntöväli (min):   
+           <input type="number" 
+                  name="turntime" 
+                  id="turntime" 
+                  step="30" /><br>
+
+          <input type="submit" value="Tallenna" style="border-radius:1em">
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function fetch(onlyGauges=true) {
+        $.get ("./fetch", function(data){
+          $("#temp").attr("data-value",data.temp);
+          $("#humidity").attr("data-value",data.humi);
+          $("#power").attr("data-value",data.power * 100);
+          $("#time").text(new Date());
+          if (onlyGauges) { return; }
+          $("#setpoint").val(data.setpoint);
+          $("#maxpower").val(data.maxpower);
+          $("#kp").val(data.kp);
+          $("#ki").val(data.ki);
+          $("#kd").val(data.kd);
+          $("#turnangle").val(data.turnangle);
+          $("#turntime").val(data.turntime);
+        });
+      }
+
+      $(function() {
+        fetch(false);
+        $("form").on("submit", function (e) {
+          e.preventDefault();
+          $.post( './save', $('form').serialize(), function(data) {
+            console.log("form result:", data);
+            fetch(false);
+          });
+        })
+        window.setInterval(fetch, 8000)
+      });
+
+    </script>
+  </body>
+</html>

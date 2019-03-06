@@ -1,0 +1,12 @@
+[submodule "DFRobot_SHT20"]
+	path = DFRobot_SHT20
+	url = https://github.com/DFRobot/DFRobot_SHT20
+[submodule "Arduino-PID-Library"]
+	path = Arduino-PID-Library
+	url = https://github.com/br3ttb/Arduino-PID-Library/
+[submodule "ESPAsyncWebServer"]
+	path = ESPAsyncWebServer
+	url = https://github.com/me-no-dev/ESPAsyncWebServer
+[submodule "ESPAsyncTCP"]
+	path = ESPAsyncTCP
+	url = https://github.com/me-no-dev/ESPAsyncTCP
