@@ -172,7 +172,9 @@ void fetchHandler(AsyncWebServerRequest *request){
 void setup() {
     Serial.begin(115200); delay(3000); fprintln("INIT");
 
-    pinMode(BUILTIN_LED, OUTPUT); ledOff();
+    pinMode(BUILTIN_LED, OUTPUT); ledOn();
+
+    initWifi("syysmyrsky", "salamamurmeli");
 
     initSensors();
 
@@ -182,16 +184,18 @@ void setup() {
 
     initTurnScheduler();
 
-    initWifi("syysmyrsky", "salamamurmeli");
-
     initServer();
 
     fprintln("INIT DONE");
+	ledOff();
 }
 
 
 
 void loop() {
+    // Just wifi requires a call to loop
+    jw.loop(); delay(10);
+
     // run turner if triggered
     if (shouldTurn) turnEggs();
 

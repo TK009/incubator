@@ -8,6 +8,7 @@
 #include "ESPAsyncWebServer.h"
 #include "SPIFFSEditor.h"
 #include <FS.h>
+#include "JustWifi.h"
 
 
 // DEFAULT SETTINGS CONSTANTS
@@ -54,6 +55,8 @@ const char* http_password = "muusi";
 #define print(s)    Serial.print(s)
 #define fprintln(s) println(F(s))
 #define fprint(s)   print(F(s))
+#define fprintf(args...)   Serial.printf(args)
+// TODO ^
 
 void ok()   { fprintln("OK"); }
 void fail() { fprintln("FAIL"); }
@@ -148,17 +151,143 @@ void initSensors() {
 }
 
 
+
+
+void infoWifi() {
+    if (WiFi.isConnected()) {
+        uint8_t * bssid = WiFi.BSSID();
+
+        fprint("[WIFI] MODE STA -------------------------------------\n");
+        fprintf("[WIFI] SSID  %s\n", WiFi.SSID().c_str());
+        fprintf("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n",
+            bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]
+        );
+        fprintf("[WIFI] CH    %d\n", WiFi.channel());
+        fprintf("[WIFI] RSSI  %d\n", WiFi.RSSI());
+        fprintf("[WIFI] IP    %s\n", WiFi.localIP().toString().c_str());
+        fprintf("[WIFI] MAC   %s\n", WiFi.macAddress().c_str());
+        fprintf("[WIFI] GW    %s\n", WiFi.gatewayIP().toString().c_str());
+        fprintf("[WIFI] MASK  %s\n", WiFi.subnetMask().toString().c_str());
+        fprintf("[WIFI] DNS   %s\n", WiFi.dnsIP().toString().c_str());
+        #if defined(ARDUINO_ARCH_ESP32)
+            fprintf("[WIFI] HOST  %s\n", WiFi.getHostname());
+        #else
+            fprintf("[WIFI] HOST  %s\n", WiFi.hostname().c_str());
+        #endif
+        fprint("[WIFI] ----------------------------------------------\n");
+    }
+
+    if (WiFi.getMode() & WIFI_AP) {
+        fprint("[WIFI] MODE AP --------------------------------------\n");
+        fprintf("[WIFI] SSID  %s\n", jw.getAPSSID().c_str());
+        fprintf("[WIFI] IP    %s\n", WiFi.softAPIP().toString().c_str());
+        fprintf("[WIFI] MAC   %s\n", WiFi.softAPmacAddress().c_str());
+        fprint("[WIFI] ----------------------------------------------\n");
+    }
+}
+
+
+void infoCallback(justwifi_messages_t code, char * parameter) {
+    // -------------------------------------------------------------------------
+    if (code == MESSAGE_TURNING_OFF) {
+        fprint("[WIFI] Turning OFF\n");
+    }
+    if (code == MESSAGE_TURNING_ON) {
+        fprint("[WIFI] Turning ON\n");
+    }
+    // -------------------------------------------------------------------------
+    if (code == MESSAGE_SCANNING) {
+        fprint("[WIFI] Scanning\n");
+    }
+    if (code == MESSAGE_SCAN_FAILED) {
+        fprint("[WIFI] Scan failed\n");
+    }
+    if (code == MESSAGE_NO_NETWORKS) {
+        fprint("[WIFI] No networks found\n");
+    }
+    if (code == MESSAGE_NO_KNOWN_NETWORKS) {
+        fprint("[WIFI] No known networks found\n");
+    }
+    if (code == MESSAGE_FOUND_NETWORK) {
+        fprintf("[WIFI] %s\n", parameter);
+    }
+    // -------------------------------------------------------------------------
+    if (code == MESSAGE_CONNECTING) {
+        fprintf("[WIFI] Connecting to %s\n", parameter);
+    }
+    if (code == MESSAGE_CONNECT_WAITING) {
+        // too much noise
+    }
+    if (code == MESSAGE_CONNECT_FAILED) {
+        fprintf("[WIFI] Could not connect to %s\n", parameter);
+    }
+    if (code == MESSAGE_CONNECTED) {
+        infoWifi();
+    }
+    if (code == MESSAGE_DISCONNECTED) {
+        fprint("[WIFI] Disconnected\n");
+    }
+    // -------------------------------------------------------------------------
+    if (code == MESSAGE_ACCESSPOINT_CREATED) {
+        infoWifi();
+    }
+    if (code == MESSAGE_ACCESSPOINT_DESTROYED) {
+        fprint("[WIFI] Disconnecting access point\n");
+    }
+    if (code == MESSAGE_ACCESSPOINT_CREATING) {
+        fprint("[WIFI] Creating access point\n");
+    }
+    if (code == MESSAGE_ACCESSPOINT_FAILED) {
+        fprint("[WIFI] Could not create access point\n");
+    }
+    // ------------------------------------------------------------------------
+    if (code == MESSAGE_WPS_START) {
+        fprint("[WIFI] WPS started\n");
+    }
+    if (code == MESSAGE_WPS_SUCCESS) {
+        fprint("[WIFI] WPS succeded!\n");
+    }
+    if (code == MESSAGE_WPS_ERROR) {
+        fprint("[WIFI] WPS failed\n");
+    }
+    // ------------------------------------------------------------------------
+    if (code == MESSAGE_SMARTCONFIG_START) {
+        fprint("[WIFI] Smart Config started\n");
+    }
+    if (code == MESSAGE_SMARTCONFIG_SUCCESS) {
+        fprint("[WIFI] Smart Config succeded!\n");
+    }
+    if (code == MESSAGE_SMARTCONFIG_ERROR) {
+        fprint("[WIFI] Smart Config failed\n");
+    }
+};
+
+
 void initWifi(const char* ssid, const char* pass) {
     fprintln("initWifi");
-    WiFi.hostname("incubator");
-    WiFi.begin(ssid, pass);
-    fprint("Connecting to "); print(ssid);
+    jw.setHostname("incubator");
+    // Callbacks
+    jw.subscribe(infoCallback);
 
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500); print(".");
-    }
-    println();
-    fprint("Connected, IP: "); println(WiFi.localIP());
+    // AP mode only as fallback
+    jw.enableAP(false);
+    jw.enableAPFallback(true);
+
+	// Enable STA mode (connecting to a router)
+    jw.enableSTA(true);
+
+    // Configure it to scan available networks and connect in order of dBm
+    jw.enableScan(true);
+
+    jw.addNetwork(ssid, pass);
+
+    //fprint("Connecting to "); print(ssid);
+
+    //while (WiFi.status() != WL_CONNECTED) {
+    //    delay(500); print(".");
+    //}
+    //println();
+    //fprint("Connected, IP: "); println(WiFi.localIP());
 
     fprintln("initWifi .. OK");
 }

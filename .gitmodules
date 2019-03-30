@@ -10,3 +10,6 @@
 [submodule "ESPAsyncTCP"]
 	path = ESPAsyncTCP
 	url = https://github.com/me-no-dev/ESPAsyncTCP
+[submodule "justwifi"]
+	path = justwifi
+	url = https://github.com/xoseperez/justwifi

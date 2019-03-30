@@ -13,6 +13,7 @@ LIBS += $(ESP_LIBS)/Servo \
 	ESPAsyncTCP \
 	DFRobot_SHT20 \
 	Arduino-PID-Library \
+	justwifi \
 	.
 	#esp8266-SNTPClock \
 	#$(ESP_LIBS)/Ticker \
