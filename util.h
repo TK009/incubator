@@ -9,6 +9,7 @@
 #include "SPIFFSEditor.h"
 #include <FS.h>
 #include "JustWifi.h"
+#include <ArduinoOTA.h>
 
 
 // DEFAULT SETTINGS CONSTANTS
@@ -25,10 +26,14 @@
 //#define DefaultKi 0.08
 //#define DefaultKd 0.0
 #define DefaultTurnTime 3 * 60 * 60 //seconds
+#define historyLength (22 * 24)
+
+#define StartingOrientation turnRight
 
 // CONSTANTS
 const char* http_username = "admin";
-const char* http_password = "muusi";
+const char* http_password = "tipumuusi";
+const char* hostname = "incubator";
 
 
 #define HeaterPin       D1
@@ -37,6 +42,8 @@ const char* http_password = "muusi";
 #define Sht2sdcPin      D6
 #define Sht2sdaPin      D5
 #define ServoTurnPin    D2
+#define TurnLeftAngle   (90-TurnDegrees/2)
+#define TurnRightAngle  (90+TurnDegrees/2)
 
 // these are defaults; best accuracy, no heater and otp reload disabled
 #define SHT_ExpectedRegister \
@@ -48,8 +55,6 @@ const char* http_password = "muusi";
 
 #define ledOn()     digitalWrite(LED_BUILTIN, LOW )
 #define ledOff()    digitalWrite(LED_BUILTIN, HIGH)
-#define turnLeftCmd()  eggTurner.write(90-TurnDegrees/2)
-#define turnRightCmd() eggTurner.write(90+TurnDegrees/2)
 
 #define println(s)  Serial.println(s)
 #define print(s)    Serial.print(s)
@@ -60,6 +65,7 @@ const char* http_password = "muusi";
 
 void ok()   { fprintln("OK"); }
 void fail() { fprintln("FAIL"); }
+void turnEggs();
 
 
 // GLOBALS
@@ -78,19 +84,18 @@ extern int TurnDegrees;
 // FUNCTIONS
 
 void turnLeft() {
-    turnLeftCmd();
-    delay(100);
-    turnLeftCmd();
-    //delay(500);
-    //turnLeftCmd();
+    for (int angle=eggTurner.read(); angle>TurnLeftAngle; angle=angle-1){
+        eggTurner.write(angle);
+        delay(50);
+    }
 }
 
+
 void turnRight() {
-    turnRightCmd();
-    delay(100);
-    turnRightCmd();
-    //delay(500);
-    //turnRightCmd();
+    for (int angle=eggTurner.read(); angle<TurnRightAngle; angle=angle+1){
+        eggTurner.write(angle);
+        delay(50);
+    }
 }
 
 
@@ -263,9 +268,10 @@ void infoCallback(justwifi_messages_t code, char * parameter) {
 };
 
 
+
 void initWifi(const char* ssid, const char* pass) {
     fprintln("initWifi");
-    jw.setHostname("incubator");
+    jw.setHostname(hostname);
     // Callbacks
     jw.subscribe(infoCallback);
 
@@ -289,10 +295,16 @@ void initWifi(const char* ssid, const char* pass) {
     //println();
     //fprint("Connected, IP: "); println(WiFi.localIP());
 
+	ArduinoOTA.setHostname(hostname);
+	ArduinoOTA.setPassword(http_password);
+    ArduinoOTA.onStart(StartingOrientation); // do not catapult eggs
+	ArduinoOTA.begin();
+
     fprintln("initWifi .. OK");
 }
 
 void fetchHandler(AsyncWebServerRequest *request);
+void historyHandler(AsyncWebServerRequest *request);
 void saveHandler(AsyncWebServerRequest *request);
 
 AsyncWebServer server(80);
@@ -307,7 +319,16 @@ void initServer(){
             });
 
     server.on("/fetch", HTTP_GET, fetchHandler);
+    server.on("/fetchHistory", HTTP_GET, historyHandler);
     server.on("/save", HTTP_POST, saveHandler);
+    server.on("/turnBoot", HTTP_POST, [](AsyncWebServerRequest *r){
+            StartingOrientation();
+            r->send(200);
+            });
+    server.on("/turn", HTTP_POST, [](AsyncWebServerRequest *r){
+            turnEggs();
+            r->send(200);
+            });
     server.begin();
     ok();
 }

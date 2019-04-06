@@ -9,6 +9,8 @@ LIBS += $(ESP_LIBS)/Servo \
 	$(ESP_LIBS)/Wire \
 	$(ESP_LIBS)/ESP8266WiFi \
 	$(ESP_LIBS)/Ticker \
+	$(ESP_LIBS)/ArduinoOTA \
+	$(ESP_LIBS)/ESP8266mDNS \
 	ESPAsyncWebServer \
 	ESPAsyncTCP \
 	DFRobot_SHT20 \
@@ -29,5 +31,10 @@ FS_DIR=data
 # UPLOAD_SPEED=460800
 #
 # EXTRAFLAGS=-DDEBUG_ESP_PORT=Serial
-#
+
+
+ESP_ADDR = incubator
+ESP_PWD = tipumuusi
+
+
 include $(HOME)/coding/hacks/makeEspArduino/makeEspArduino.mk

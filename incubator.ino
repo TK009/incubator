@@ -6,6 +6,11 @@ bool turnedRight = false, shouldTurn = false, shouldMeasure = true;
 double Setpoint = DefaultSetpoint, TemperatureInput, HeaterOutput, Humidity,
     MaxHeater=1.0, TurnTime=DefaultTurnTime;
 int TurnDegrees=DefaultTurnDegrees;
+float tempHistory[historyLength];
+float humHistory[historyLength];
+float powerHistory[historyLength];
+int numberOfHours = 0;
+int numberOfAverageNmubers = 0;
 
 
 
@@ -87,7 +92,7 @@ void initTurner() {
     fprintln("initPins");
 
     eggTurner.attach(ServoTurnPin, 750, 2250);//1050, 1950); // Model: SG90 min 1ms, max 2ms
-    turnLeft();
+    StartingOrientation();
 
     ok();
 }
@@ -164,6 +169,13 @@ void fetchHandler(AsyncWebServerRequest *request){
     );
     request->send(stream);
 }
+void historyHandler(AsyncWebServerRequest *request){
+    
+    //server.send(200, "application/json", );
+    auto stream = request->beginResponseStream("application/json");
+    stream->printf("");
+    request->send(stream);
+}
 
 
 
@@ -194,10 +206,12 @@ void setup() {
 
 void loop() {
     // Just wifi requires a call to loop
-    jw.loop(); delay(10);
+    jw.loop(); delay(2);
 
     // run turner if triggered
     if (shouldTurn) turnEggs();
 
     if (shouldMeasure) updateHeater();
+
+    ArduinoOTA.handle();
 }
