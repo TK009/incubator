@@ -20,7 +20,7 @@
 // Settings for 5V heater
 #define DefaultKp 5.0
 #define DefaultKi 0.08
-#define DefaultKd 0.0
+#define DefaultKd 0.01
 // Settings for 12V heater
 //#define DefaultKp 2.0
 //#define DefaultKi 0.08
@@ -28,28 +28,29 @@
 #define DefaultTurnTime 3 * 60 * 60 //seconds
 #define historyLength (22 * 24)
 
-#define StartingOrientation turnRight
 
 // CONSTANTS
 const char* http_username = "admin";
 const char* http_password = "tipumuusi";
 const char* hostname = "incubator";
 
+// PINS
 
-#define HeaterPin       D1
-#define Sht1sdcPin      D4
-#define Sht1sdaPin      D3
-#define Sht2sdcPin      D6
-#define Sht2sdaPin      D5
-#define ServoTurnPin    D2
-#define TurnLeftAngle   (90-TurnDegrees/2)
-#define TurnRightAngle  (90+TurnDegrees/2)
+#define HeaterPin       D1  // MOSFET Gate
+#define Sht1sdcPin      D4  // I2C clock line for temperature&humidity sensor 1
+#define Sht1sdaPin      D3  // I2C data line for temperature&humidity sensor 1
+#define Sht2sdcPin      D6  // I2C clock line for temperature&humidity sensor 2
+#define Sht2sdaPin      D5  // I2C data line for temperature&humidity sensor 2
+#define ServoTurnPin    D2  // Servo PWM data line
 
 // these are defaults; best accuracy, no heater and otp reload disabled
 #define SHT_ExpectedRegister \
     (USER_REGISTER_RESOLUTION_RH12_TEMP14 | \
     USER_REGISTER_DISABLE_OTP_RELOAD)
 
+#define StartingOrientation turnRight
+#define TurnLeftAngle   (90-TurnDegrees/2)
+#define TurnRightAngle  (90+TurnDegrees/2)
 
 // MACROS
 
