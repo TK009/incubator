@@ -1,4 +1,3 @@
-
 Software
 ========
 
@@ -55,6 +54,7 @@ Assembly
 #define Sht2sdaPin      D5  // I2C data line for temperature&humidity sensor 2
 #define ServoTurnPin    D2  // Servo PWM data line
 // Note: sdc lines could be shared between sensors
+```
 
 * ESP8266 handles only 3.3V input/output signals so converter might be needed for some components like servo motor and mosfet.
 * Connect voltage lines
