@@ -2,13 +2,9 @@
 #include "util.h"
 
 
-bool turnedRight = false, shouldTurn = false, shouldMeasure = true;
-double Setpoint = DefaultSetpoint, TemperatureInput, HeaterOutput, Humidity,
-    MaxHeater=1.0, TurnTime=DefaultTurnTime;
-int TurnDegrees=DefaultTurnDegrees;
-float tempHistory[historyLength];
-float humHistory[historyLength];
-float powerHistory[historyLength];
+float tempHistory[HistoryLength];
+float humHistory[HistoryLength];
+float powerHistory[HistoryLength];
 int numberOfHours = 0;
 int numberOfAverageNmubers = 0;
 
@@ -50,8 +46,8 @@ double readHumidities() {
 
 
 PID heaterController(
-    &TemperatureInput, &HeaterOutput, &Setpoint,
-    DefaultKp, DefaultKi, DefaultKd, P_ON_E, DIRECT); // proportional on error or measurement P_ON_E or P_ON_M
+    &TemperatureInput, &HeaterOutput, &s.Setpoint,
+    s.Kp, s.Ki, s.Kd, P_ON_E, DIRECT); // proportional on error or measurement P_ON_E or P_ON_M
 
 Ticker HeaterTimer;
 
@@ -64,8 +60,9 @@ void initHeater() {
     //pinMode(HeaterPin, PWM);
     analogWrite(HeaterPin, 1);
 
-    heaterController.SetOutputLimits(0.0, MaxHeater);
+    heaterController.SetOutputLimits(0.0, s.MaxHeater);
     heaterController.SetMode(AUTOMATIC);
+    heaterController.SetTunings(s.Kp,s.Ki,s.Kd);
     HeaterTimer.attach(1, activateMeasurement);
     ok();
 }
@@ -92,7 +89,7 @@ void initTurner() {
     fprintln("initPins");
 
     eggTurner.attach(ServoTurnPin, 750, 2250);//1050, 1950); // Model: SG90 min 1ms, max 2ms
-    StartingOrientation();
+    activateStartingOrientation();
 
     ok();
 }
@@ -117,8 +114,8 @@ Ticker TurnTimer;
 
 void initTurnScheduler() {
     fprintln("initTurnScheduler");
-    print(TurnTime); fprintln(" sec turn interval");
-    TurnTimer.attach(TurnTime, activateTurn);
+    print(s.TurnTime); fprintln(" sec turn interval");
+    TurnTimer.attach(s.TurnTime, activateTurn);
     ok();
 }
 
@@ -132,27 +129,32 @@ void initTurnScheduler() {
 
 void saveHandler(AsyncWebServerRequest *request){
     if (has("setpoint")) {
-        Setpoint = arg("setpoint").toFloat();
-        fprint("Received setpoint: "); println(Setpoint);
+        s.Setpoint = arg("setpoint").toFloat();
+        fprint("Received setpoint: "); println(s.Setpoint);
     }
     if (has("maxpower")) {
-        MaxHeater = min(1.0, (double) arg("maxpower").toFloat());
-        fprint("Received maxpower: "); println(MaxHeater);
+        s.MaxHeater = min(1.0, (double) arg("maxpower").toFloat());
+        fprint("Received maxpower: "); println(s.MaxHeater);
     }
     if (has("kp") && has("ki") && has("kd")) {
-        heaterController.SetTunings(arg("kp").toFloat(),arg("ki").toFloat(),arg("kd").toFloat());
-        fprintln("Received heater controller tunings: "); println(heaterController.GetKp()); println(heaterController.GetKi()); println(heaterController.GetKd());
+        s.Kp = arg("kp").toFloat();
+        s.Ki = arg("ki").toFloat();
+        s.Kd = arg("kd").toFloat();
+        fprintln("Received heater controller tunings: "); println(s.Kp); println(s.Ki); println(s.Kd);
     }
     if (has("turnangle")) {
-        TurnDegrees = arg("turnangle").toInt();
-        fprint("Received Turn angle: "); println(TurnDegrees);
+        s.TurnDegrees = arg("turnangle").toInt();
+        fprint("Received Turn angle: "); println(s.TurnDegrees);
     }
     if (has("turntime")) {
-        TurnTime = arg("turntime").toFloat()*60;
+        s.TurnTime = arg("turntime").toFloat()*60;
         initTurnScheduler();
     }
 
     initHeater();
+
+    EEPROM.put(0, s);
+    EEPROM.commit();
 
     request->send(200, "text/plain", "saved");
 }
@@ -164,8 +166,8 @@ void fetchHandler(AsyncWebServerRequest *request){
     stream->printf(
         ("{\"setpoint\": %f, \"maxpower\": %f, \"kp\": %f, \"ki\": %f, \"kd\": %f,"
         " \"turnangle\": %i, \"turntime\": %f, \"temp\": %f, \"humi\": %f, \"power\": %f}"),
-        Setpoint, MaxHeater, heaterController.GetKp(), heaterController.GetKi(), heaterController.GetKd(),
-        TurnDegrees, TurnTime/60, TemperatureInput, Humidity, HeaterOutput
+        s.Setpoint, s.MaxHeater, heaterController.GetKp(), heaterController.GetKi(), heaterController.GetKd(),
+        s.TurnDegrees, s.TurnTime/60, TemperatureInput, Humidity, HeaterOutput
     );
     request->send(stream);
 }
@@ -185,6 +187,8 @@ void setup() {
     Serial.begin(115200); delay(3000); fprintln("INIT");
 
     pinMode(BUILTIN_LED, OUTPUT); ledOn();
+
+    initSettings();
 
     initWifi("syysmyrsky", "salamamurmeli");
 
@@ -206,7 +210,7 @@ void setup() {
 
 void loop() {
     // Just wifi requires a call to loop
-    jw.loop(); delay(2);
+    jw.loop(); delay(3);
 
     // run turner if triggered
     if (shouldTurn) turnEggs();

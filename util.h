@@ -10,29 +10,36 @@
 #include <FS.h>
 #include "JustWifi.h"
 #include <ArduinoOTA.h>
+#include <EEPROM.h>
 
 
 // DEFAULT SETTINGS CONSTANTS
 
 // full turn deglees 1..180
 #define DefaultTurnDegrees 180
-#define DefaultSetpoint 37.5
+#define DefaultSetpoint 36.1
 // Settings for 5V heater
-#define DefaultKp 5.0
+#define DefaultKp 2.0
 #define DefaultKi 0.08
-#define DefaultKd 0.01
+#define DefaultKd 0.04
 // Settings for 12V heater
 //#define DefaultKp 2.0
 //#define DefaultKi 0.08
 //#define DefaultKd 0.0
 #define DefaultTurnTime 3 * 60 * 60 //seconds
-#define historyLength (22 * 24)
+
+
 
 
 // CONSTANTS
 const char* http_username = "admin";
 const char* http_password = "tipumuusi";
 const char* hostname = "incubator";
+
+#define HistoryInterval 15 // min
+#define HistoryLength (int)(22 * 24 * (60/HistoryInterval))
+#define EepromSize sizeof(Settings)
+#define ReconnectTime 20000 // ms
 
 // PINS
 
@@ -48,9 +55,10 @@ const char* hostname = "incubator";
     (USER_REGISTER_RESOLUTION_RH12_TEMP14 | \
     USER_REGISTER_DISABLE_OTP_RELOAD)
 
-#define StartingOrientation turnRight
-#define TurnLeftAngle   (90-TurnDegrees/2)
-#define TurnRightAngle  (90+TurnDegrees/2)
+//#define StartingOrientation turnRight
+#define StartingOrientation false
+#define TurnLeftAngle   (90-s.TurnDegrees/2)
+#define TurnRightAngle  (90+s.TurnDegrees/2)
 
 // MACROS
 
@@ -78,11 +86,35 @@ TwoWire sht2comms;
 
 Servo eggTurner;
 
-bool heating = false;
-extern int TurnDegrees;
+bool heating = false,
+     turnedRight = false,
+     shouldTurn = false,
+     shouldMeasure = true;
+double Humidity,
+       TemperatureInput,
+       HeaterOutput;
+
+typedef struct Settings {
+    double Setpoint = DefaultSetpoint;
+    double MaxHeater = 1.0;
+    double Kp = DefaultKp;
+    double Ki = DefaultKi;
+    double Kd = DefaultKd;
+    double TurnTime = DefaultTurnTime;
+    int TurnDegrees = DefaultTurnDegrees;
+} Settings;
+
+Settings s;
 
 
 // FUNCTIONS
+
+void activateTurn();
+
+void activateStartingOrientation() {
+  turnedRight = StartingOrientation;
+  activateTurn();
+}
 
 void turnLeft() {
     for (int angle=eggTurner.read(); angle>TurnLeftAngle; angle=angle-1){
@@ -137,8 +169,23 @@ bool testSensor(DFRobot_SHT20 sensor) {
 }
 
 
+
+void initSettings() {
+    fprintln("initSettings");
+
+    EEPROM.begin(EepromSize);
+    EEPROM.get(0, s);
+
+    ok();
+}
+
+
+
 void initSensors() {
     fprintln("initSensors");
+
+    ADC_MODE(ADC_VCC); // Measure power supply for debugging
+
     bool error = false;
 
     fprint("Testing sensor1 on pin "); println(Sht1sdaPin);
@@ -272,7 +319,10 @@ void infoCallback(justwifi_messages_t code, char * parameter) {
 
 void initWifi(const char* ssid, const char* pass) {
     fprintln("initWifi");
+
     jw.setHostname(hostname);
+    jw.setReconnectTimeout(ReconnectTime);
+
     // Callbacks
     jw.subscribe(infoCallback);
 
@@ -298,7 +348,7 @@ void initWifi(const char* ssid, const char* pass) {
 
 	ArduinoOTA.setHostname(hostname);
 	ArduinoOTA.setPassword(http_password);
-    ArduinoOTA.onStart(StartingOrientation); // do not catapult eggs
+    ArduinoOTA.onStart(activateStartingOrientation); // do not catapult eggs
 	ArduinoOTA.begin();
 
     fprintln("initWifi .. OK");
@@ -323,11 +373,11 @@ void initServer(){
     server.on("/fetchHistory", HTTP_GET, historyHandler);
     server.on("/save", HTTP_POST, saveHandler);
     server.on("/turnBoot", HTTP_POST, [](AsyncWebServerRequest *r){
-            StartingOrientation();
+            activateStartingOrientation();
             r->send(200);
             });
     server.on("/turn", HTTP_POST, [](AsyncWebServerRequest *r){
-            turnEggs();
+            activateTurn();
             r->send(200);
             });
     server.begin();
