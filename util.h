@@ -65,15 +65,17 @@ const char* hostname = "incubator";
 #define ledOn()     digitalWrite(LED_BUILTIN, LOW )
 #define ledOff()    digitalWrite(LED_BUILTIN, HIGH)
 
-#define println(s)  Serial.println(s)
-#define print(s)    Serial.print(s)
+#define sprintln(s)  Serial.println(s)
+#define sprint(s)    Serial.print(s)
+#define sfprintln(s) Serial.println(F(s))
+#define sfprint(s)   Serial.print(F(s))
+#define sfprintf(args...)   Serial.printf(args)
 #define fprintln(s) println(F(s))
 #define fprint(s)   print(F(s))
-#define fprintf(args...)   Serial.printf(args)
 // TODO ^
 
-void ok()   { fprintln("OK"); }
-void fail() { fprintln("FAIL"); }
+void ok()   { sfprintln("OK"); }
+void fail() { sfprintln("FAIL"); }
 void turnEggs();
 
 
@@ -138,30 +140,30 @@ bool testSensor(DFRobot_SHT20 sensor) {
     // check that register has default values (best accuracy and no heater
     byte reg = sensor.readUserRegister();
     if (reg != SHT_ExpectedRegister) {
-        fprint("WARN: Unexpected register value: "); println(reg);
+        sfprint("WARN: Unexpected register value: "); sprintln(reg);
 
         // try to write the default settings
         sensor.writeUserRegister(SHT_ExpectedRegister);
         reg = sensor.readUserRegister();
         if (reg != SHT_ExpectedRegister) {
-            fprint("ERROR: sensor not working, register: "); println(reg);
+            sfprint("ERROR: sensor not working, register: "); sprintln(reg);
             return true;
         }
     }
     
     float temp = sensor.readTemperature();
 
-    fprint("temperature: "); println(temp);
+    sfprint("temperature: "); sprintln(temp);
     if (temp > 130) {
-        fprintln("ERROR: invalid temperature");
+        sfprintln("ERROR: invalid temperature");
         return true;
     }
 
     float humi = sensor.readHumidity();
 
-    fprint("humidity: "); println(humi);
+    sfprint("humidity: "); sprintln(humi);
     if (humi > 100) {
-        fprint("ERROR: invalid humidity");
+        sfprint("ERROR: invalid humidity");
         return true;
     }
 
@@ -171,7 +173,7 @@ bool testSensor(DFRobot_SHT20 sensor) {
 
 
 void initSettings() {
-    fprintln("initSettings");
+    sfprintln("initSettings");
 
     EEPROM.begin(EepromSize);
     EEPROM.get(0, s);
@@ -181,24 +183,24 @@ void initSettings() {
 
 
 
-void initSensors() {
-    fprintln("initSensors");
+ADC_MODE(ADC_VCC); // Measure power supply for debugging
 
-    ADC_MODE(ADC_VCC); // Measure power supply for debugging
+void initSensors() {
+    sfprintln("initSensors");
 
     bool error = false;
 
-    fprint("Testing sensor1 on pin "); println(Sht1sdaPin);
+    sfprint("Testing sensor1 on pin "); sprintln(Sht1sdaPin);
     sht1comms.begin(Sht1sdaPin,Sht1sdcPin);
     sensor1.initSHT20(sht1comms);
     error |= testSensor(sensor1);
 
-    fprint("Testing sensor2 on pin "); println(Sht2sdaPin);
+    sfprint("Testing sensor2 on pin "); sprintln(Sht2sdaPin);
     sht2comms.begin(Sht2sdaPin,Sht2sdcPin);
     sensor2.initSHT20(sht2comms);
     error |= testSensor(sensor2);
 
-    fprint("initSensors .. ");
+    sfprint("initSensors .. ");
     if (error) fail();
     else ok();
 }
@@ -210,32 +212,32 @@ void infoWifi() {
     if (WiFi.isConnected()) {
         uint8_t * bssid = WiFi.BSSID();
 
-        fprint("[WIFI] MODE STA -------------------------------------\n");
-        fprintf("[WIFI] SSID  %s\n", WiFi.SSID().c_str());
-        fprintf("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n",
+        sfprint("[WIFI] MODE STA -------------------------------------\n");
+        sfprintf("[WIFI] SSID  "); sprintln(WiFi.SSID());
+        sfprintf("[WIFI] BSSID %02X:%02X:%02X:%02X:%02X:%02X\n",
             bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5]
         );
-        fprintf("[WIFI] CH    %d\n", WiFi.channel());
-        fprintf("[WIFI] RSSI  %d\n", WiFi.RSSI());
-        fprintf("[WIFI] IP    %s\n", WiFi.localIP().toString().c_str());
-        fprintf("[WIFI] MAC   %s\n", WiFi.macAddress().c_str());
-        fprintf("[WIFI] GW    %s\n", WiFi.gatewayIP().toString().c_str());
-        fprintf("[WIFI] MASK  %s\n", WiFi.subnetMask().toString().c_str());
-        fprintf("[WIFI] DNS   %s\n", WiFi.dnsIP().toString().c_str());
+        sfprintf("[WIFI] CH    %d\n", WiFi.channel());
+        sfprintf("[WIFI] RSSI  %d\n", WiFi.RSSI());
+        sfprintf("[WIFI] IP    %s\n", WiFi.localIP().toString().c_str());
+        sfprintf("[WIFI] MAC   %s\n", WiFi.macAddress().c_str());
+        sfprintf("[WIFI] GW    %s\n", WiFi.gatewayIP().toString().c_str());
+        sfprintf("[WIFI] MASK  %s\n", WiFi.subnetMask().toString().c_str());
+        sfprintf("[WIFI] DNS   %s\n", WiFi.dnsIP().toString().c_str());
         #if defined(ARDUINO_ARCH_ESP32)
-            fprintf("[WIFI] HOST  %s\n", WiFi.getHostname());
+            sfprintf("[WIFI] HOST  %s\n", WiFi.getHostname());
         #else
-            fprintf("[WIFI] HOST  %s\n", WiFi.hostname().c_str());
+            sfprintf("[WIFI] HOST  %s\n", WiFi.hostname().c_str());
         #endif
-        fprint("[WIFI] ----------------------------------------------\n");
+        sfprint("[WIFI] ----------------------------------------------\n");
     }
 
     if (WiFi.getMode() & WIFI_AP) {
-        fprint("[WIFI] MODE AP --------------------------------------\n");
-        fprintf("[WIFI] SSID  %s\n", jw.getAPSSID().c_str());
-        fprintf("[WIFI] IP    %s\n", WiFi.softAPIP().toString().c_str());
-        fprintf("[WIFI] MAC   %s\n", WiFi.softAPmacAddress().c_str());
-        fprint("[WIFI] ----------------------------------------------\n");
+        sfprint("[WIFI] MODE AP --------------------------------------\n");
+        sfprintf("[WIFI] SSID  %s\n", jw.getAPSSID().c_str());
+        sfprintf("[WIFI] IP    %s\n", WiFi.softAPIP().toString().c_str());
+        sfprintf("[WIFI] MAC   %s\n", WiFi.softAPmacAddress().c_str());
+        sfprint("[WIFI] ----------------------------------------------\n");
     }
 }
 
@@ -243,82 +245,82 @@ void infoWifi() {
 void infoCallback(justwifi_messages_t code, char * parameter) {
     // -------------------------------------------------------------------------
     if (code == MESSAGE_TURNING_OFF) {
-        fprint("[WIFI] Turning OFF\n");
+        sfprint("[WIFI] Turning OFF\n");
     }
     if (code == MESSAGE_TURNING_ON) {
-        fprint("[WIFI] Turning ON\n");
+        sfprint("[WIFI] Turning ON\n");
     }
     // -------------------------------------------------------------------------
     if (code == MESSAGE_SCANNING) {
-        fprint("[WIFI] Scanning\n");
+        sfprint("[WIFI] Scanning\n");
     }
     if (code == MESSAGE_SCAN_FAILED) {
-        fprint("[WIFI] Scan failed\n");
+        sfprint("[WIFI] Scan failed\n");
     }
     if (code == MESSAGE_NO_NETWORKS) {
-        fprint("[WIFI] No networks found\n");
+        sfprint("[WIFI] No networks found\n");
     }
     if (code == MESSAGE_NO_KNOWN_NETWORKS) {
-        fprint("[WIFI] No known networks found\n");
+        sfprint("[WIFI] No known networks found\n");
     }
     if (code == MESSAGE_FOUND_NETWORK) {
-        fprintf("[WIFI] %s\n", parameter);
+        sfprintf("[WIFI] %s\n", parameter);
     }
     // -------------------------------------------------------------------------
     if (code == MESSAGE_CONNECTING) {
-        fprintf("[WIFI] Connecting to %s\n", parameter);
+        sfprintf("[WIFI] Connecting to %s\n", parameter);
     }
     if (code == MESSAGE_CONNECT_WAITING) {
         // too much noise
     }
     if (code == MESSAGE_CONNECT_FAILED) {
-        fprintf("[WIFI] Could not connect to %s\n", parameter);
+        sfprintf("[WIFI] Could not connect to %s\n", parameter);
     }
     if (code == MESSAGE_CONNECTED) {
         infoWifi();
     }
     if (code == MESSAGE_DISCONNECTED) {
-        fprint("[WIFI] Disconnected\n");
+        sfprint("[WIFI] Disconnected\n");
     }
     // -------------------------------------------------------------------------
     if (code == MESSAGE_ACCESSPOINT_CREATED) {
         infoWifi();
     }
     if (code == MESSAGE_ACCESSPOINT_DESTROYED) {
-        fprint("[WIFI] Disconnecting access point\n");
+        sfprint("[WIFI] Disconnecting access point\n");
     }
     if (code == MESSAGE_ACCESSPOINT_CREATING) {
-        fprint("[WIFI] Creating access point\n");
+        sfprint("[WIFI] Creating access point\n");
     }
     if (code == MESSAGE_ACCESSPOINT_FAILED) {
-        fprint("[WIFI] Could not create access point\n");
+        sfprint("[WIFI] Could not create access point\n");
     }
     // ------------------------------------------------------------------------
     if (code == MESSAGE_WPS_START) {
-        fprint("[WIFI] WPS started\n");
+        sfprint("[WIFI] WPS started\n");
     }
     if (code == MESSAGE_WPS_SUCCESS) {
-        fprint("[WIFI] WPS succeded!\n");
+        sfprint("[WIFI] WPS succeded!\n");
     }
     if (code == MESSAGE_WPS_ERROR) {
-        fprint("[WIFI] WPS failed\n");
+        sfprint("[WIFI] WPS failed\n");
     }
     // ------------------------------------------------------------------------
     if (code == MESSAGE_SMARTCONFIG_START) {
-        fprint("[WIFI] Smart Config started\n");
+        sfprint("[WIFI] Smart Config started\n");
     }
     if (code == MESSAGE_SMARTCONFIG_SUCCESS) {
-        fprint("[WIFI] Smart Config succeded!\n");
+        sfprint("[WIFI] Smart Config succeded!\n");
     }
     if (code == MESSAGE_SMARTCONFIG_ERROR) {
-        fprint("[WIFI] Smart Config failed\n");
+        sfprint("[WIFI] Smart Config failed\n");
     }
 };
 
 
 
 void initWifi(const char* ssid, const char* pass) {
-    fprintln("initWifi");
+    sfprintln("initWifi");
 
     jw.setHostname(hostname);
     jw.setReconnectTimeout(ReconnectTime);
@@ -338,48 +340,62 @@ void initWifi(const char* ssid, const char* pass) {
 
     jw.addNetwork(ssid, pass);
 
-    //fprint("Connecting to "); print(ssid);
+    //sfprint("Connecting to "); sprint(ssid);
 
     //while (WiFi.status() != WL_CONNECTED) {
-    //    delay(500); print(".");
+    //    delay(500); sprint(".");
     //}
-    //println();
-    //fprint("Connected, IP: "); println(WiFi.localIP());
+    //sprintln();
+    //fsprint("Connected, IP: "); sprintln(WiFi.localIP());
 
 	ArduinoOTA.setHostname(hostname);
 	ArduinoOTA.setPassword(http_password);
     ArduinoOTA.onStart(activateStartingOrientation); // do not catapult eggs
 	ArduinoOTA.begin();
 
-    fprintln("initWifi .. OK");
+    sfprintln("initWifi .. OK");
 }
 
 void fetchHandler(AsyncWebServerRequest *request);
 void historyHandler(AsyncWebServerRequest *request);
 void saveHandler(AsyncWebServerRequest *request);
 
+void statusHandler(AsyncWebServerRequest *request) {
+    auto stream = request->beginResponseStream("application/json");
+    stream->fprint("{\"heap\":");
+    stream->print(ESP.getFreeHeap());
+    stream->fprint(",\"resetReason\":\"");
+    stream->print(ESP.getResetReason());
+    stream->fprint("\",\"fragmentation\":");
+    stream->print(ESP.getHeapFragmentation());
+    stream->fprint(",\"maxFreeBlockSize\":");
+    stream->print(ESP.getMaxFreeBlockSize());
+    stream->fprint(",\"programMD5\":\"");
+    stream->print(ESP.getSketchMD5());
+    stream->fprint("\",\"vcc\":");
+    stream->print(ESP.getVcc());
+    stream->fprint("}");
+    request->send(stream);
+}
+
 AsyncWebServer server(80);
 
 void initServer(){
-    fprintln("initServer");
+    sfprintln("initServer");
     SPIFFS.begin();
     server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
     server.addHandler(new SPIFFSEditor(http_username,http_password));
-    server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
-            request->send(200, "text/plain", String(ESP.getFreeHeap()));
-            });
 
-    server.on("/fetch", HTTP_GET, fetchHandler);
+    server.on("/fetch",        HTTP_GET, fetchHandler);
+    server.on("/status",       HTTP_GET, statusHandler);
     server.on("/fetchHistory", HTTP_GET, historyHandler);
-    server.on("/save", HTTP_POST, saveHandler);
-    server.on("/turnBoot", HTTP_POST, [](AsyncWebServerRequest *r){
-            activateStartingOrientation();
-            r->send(200);
-            });
-    server.on("/turn", HTTP_POST, [](AsyncWebServerRequest *r){
-            activateTurn();
-            r->send(200);
-            });
+    server.on("/save",         HTTP_POST, saveHandler);
+    server.on("/turnBoot",     HTTP_POST, [](AsyncWebServerRequest *r){
+            activateStartingOrientation(); r->send(200); });
+    server.on("/turn",         HTTP_POST, [](AsyncWebServerRequest *r){
+            activateTurn(); r->send(200); });
+    server.on("/reboot",       HTTP_POST, [](AsyncWebServerRequest *r){
+            r->send(200); ESP.restart(); });
     server.begin();
     ok();
 }

@@ -17,12 +17,12 @@ double readTemperatures() {
     double temp1 = sensor1.readTemperature();
     sht2comms.begin(Sht2sdaPin,Sht2sdcPin);
     double temp2 = sensor2.readTemperature();
-    print(temp1); print("C "); print(temp2); print("C ");
+    sprint(temp1); sprint("C "); sprint(temp2); sprint("C ");
 
     if (temp1 < 130 && temp2 < 130) return (temp1 + temp2) * 0.5;
     if (temp1 < 130) return temp1;
     if (temp2 < 130) return temp2;
-    else fprintln("ERROR: Both temperature readings invalid!");
+    else sfprintln("ERROR: Both temperature readings invalid!");
     return 9001;
 }
 
@@ -31,12 +31,12 @@ double readHumidities() {
     double temp1 = sensor1.readHumidity();
     sht2comms.begin(Sht2sdaPin,Sht2sdcPin);
     double temp2 = sensor2.readHumidity();
-    print(temp1); print("% "); print(temp2); print("% ");
+    sprint(temp1); sprint("% "); sprint(temp2); sprint("% ");
 
     if (temp1 < 100 && temp2 < 100) return (temp1 + temp2) * 0.5;
     if (temp1 < 100) return temp1;
     if (temp2 < 100) return temp2;
-    else fprintln("ERROR: Both humidity readings invalid!");
+    else sfprintln("ERROR: Both humidity readings invalid!");
     return 0;
 }
 
@@ -55,7 +55,7 @@ void activateMeasurement() {
     shouldMeasure = true;
 }
 void initHeater() {
-    fprintln("initHeater");
+    sfprintln("initHeater");
 
     //pinMode(HeaterPin, PWM);
     analogWrite(HeaterPin, 1);
@@ -75,8 +75,8 @@ void updateHeater() {
     // update heater
     heaterController.Compute();
     analogWrite(HeaterPin, (int) (HeaterOutput * PWMRANGE));
-    fprint("Input: "); print(TemperatureInput); fprint("C Heatpower: ");
-    println(HeaterOutput);
+    sfprint("Input: "); sprint(TemperatureInput); sfprint("C Heatpower: ");
+    sprintln(HeaterOutput);
     shouldMeasure = false;
 }
 
@@ -86,7 +86,7 @@ void updateHeater() {
 
 
 void initTurner() {
-    fprintln("initPins");
+    sfprintln("initPins");
 
     eggTurner.attach(ServoTurnPin, 750, 2250);//1050, 1950); // Model: SG90 min 1ms, max 2ms
     activateStartingOrientation();
@@ -113,8 +113,8 @@ void activateTurn() {
 Ticker TurnTimer;
 
 void initTurnScheduler() {
-    fprintln("initTurnScheduler");
-    print(s.TurnTime); fprintln(" sec turn interval");
+    sfprintln("initTurnScheduler");
+    sprint(s.TurnTime); sfprintln(" sec turn interval");
     TurnTimer.attach(s.TurnTime, activateTurn);
     ok();
 }
@@ -130,21 +130,21 @@ void initTurnScheduler() {
 void saveHandler(AsyncWebServerRequest *request){
     if (has("setpoint")) {
         s.Setpoint = arg("setpoint").toFloat();
-        fprint("Received setpoint: "); println(s.Setpoint);
+        sfprint("Received setpoint: "); sprintln(s.Setpoint);
     }
     if (has("maxpower")) {
         s.MaxHeater = min(1.0, (double) arg("maxpower").toFloat());
-        fprint("Received maxpower: "); println(s.MaxHeater);
+        sfprint("Received maxpower: "); sprintln(s.MaxHeater);
     }
     if (has("kp") && has("ki") && has("kd")) {
         s.Kp = arg("kp").toFloat();
         s.Ki = arg("ki").toFloat();
         s.Kd = arg("kd").toFloat();
-        fprintln("Received heater controller tunings: "); println(s.Kp); println(s.Ki); println(s.Kd);
+        sfprintln("Received heater controller tunings: "); sprintln(s.Kp); sprintln(s.Ki); sprintln(s.Kd);
     }
     if (has("turnangle")) {
         s.TurnDegrees = arg("turnangle").toInt();
-        fprint("Received Turn angle: "); println(s.TurnDegrees);
+        sfprint("Received Turn angle: "); sprintln(s.TurnDegrees);
     }
     if (has("turntime")) {
         s.TurnTime = arg("turntime").toFloat()*60;
@@ -184,7 +184,7 @@ void historyHandler(AsyncWebServerRequest *request){
 
 
 void setup() {
-    Serial.begin(115200); delay(3000); fprintln("INIT");
+    Serial.begin(115200); delay(3000); sfprintln("INIT");
 
     pinMode(BUILTIN_LED, OUTPUT); ledOn();
 
@@ -202,7 +202,7 @@ void setup() {
 
     initServer();
 
-    fprintln("INIT DONE");
+    sfprintln("INIT DONE");
 	ledOff();
 }
 

@@ -5,12 +5,14 @@ SKETCH=incubator.ino
 #current_dir := $(patsubst %/,%,$(dir $(mkfile_path)))
 #ESP_ROOT=$(HOME)/Arduino/esp8266
 
-LIBS += $(ESP_LIBS)/Servo \
+LIBS += \
+	$(ESP_LIBS)/Servo \
 	$(ESP_LIBS)/Wire \
 	$(ESP_LIBS)/ESP8266WiFi \
 	$(ESP_LIBS)/Ticker \
 	$(ESP_LIBS)/ArduinoOTA \
 	$(ESP_LIBS)/ESP8266mDNS \
+	$(ESP_LIBS)/EEPROM \
 	ESPAsyncWebServer \
 	ESPAsyncTCP \
 	DFRobot_SHT20 \
