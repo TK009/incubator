@@ -128,6 +128,7 @@ form > div {
       </div>
 
       <p style="color:goldenrod; text-align: center;"><i> Tiedot päivitetty: <span id="time">ei koskaan</span></i>
+      <p style="color:goldenrod; text-align: center;"><i> Lämpötilat: <span id="tempNew1"></span>°C <span id="tempNew2">°C </span> <span id="tempOld">°C </span> </i>
 
 
 
@@ -193,6 +194,9 @@ form > div {
           $("#humidity").attr("data-value",data.humi);
           $("#power").attr("data-value",data.power * 100);
           $("#time").text(new Date());
+          $("#tempNew1").text(data.tempNew1);
+          $("#tempNew2").text(data.tempNew2);
+          $("#tempOld").text(data.tempOld);
           if (onlyGauges) { return; }
           $("#setpoint").val(data.setpoint);
           $("#maxpower").val(data.maxpower);

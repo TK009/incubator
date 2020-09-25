@@ -11,13 +11,14 @@
 #include "JustWifi.h"
 #include <ArduinoOTA.h>
 #include <EEPROM.h>
-
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 // DEFAULT SETTINGS CONSTANTS
 
 // full turn deglees 1..180
 #define DefaultTurnDegrees 180
-#define DefaultSetpoint 36.1
+#define DefaultSetpoint 37.0
 // Settings for 5V heater
 #define DefaultKp 2.0
 #define DefaultKi 0.08
@@ -40,6 +41,7 @@ const char* hostname = "incubator";
 #define HistoryLength (int)(22 * 24 * (60/HistoryInterval))
 #define EepromSize sizeof(Settings)
 #define ReconnectTime 20000 // ms
+#define TEMPERATURE_PRECISION 12 // bits
 
 // PINS
 
@@ -49,6 +51,8 @@ const char* hostname = "incubator";
 #define Sht2sdcPin      D6  // I2C clock line for temperature&humidity sensor 2
 #define Sht2sdaPin      D5  // I2C data line for temperature&humidity sensor 2
 #define ServoTurnPin    D2  // Servo PWM data line
+#define ONE_WIRE_BUS    D5
+
 
 // these are defaults; best accuracy, no heater and otp reload disabled
 #define SHT_ExpectedRegister \
@@ -93,10 +97,15 @@ bool heating = false,
      shouldTurn = false,
      shouldMeasure = true;
 double Humidity,
+       Temp0,
+       Temp1,
+       Temp2,
        TemperatureInput,
        HeaterOutput;
 
+#define SVersion 1
 typedef struct Settings {
+    int sVersion = SVersion;
     double Setpoint = DefaultSetpoint;
     double MaxHeater = 1.0;
     double Kp = DefaultKp;
@@ -175,15 +184,33 @@ bool testSensor(DFRobot_SHT20 sensor) {
 void initSettings() {
     sfprintln("initSettings");
 
-    EEPROM.begin(EepromSize);
-    EEPROM.get(0, s);
+    Settings fromMemory;
+    fromMemory.sVersion = 0;
 
-    ok();
+    EEPROM.begin(EepromSize);
+    EEPROM.get(0, fromMemory);
+
+    if (fromMemory.sVersion == SVersion) {
+        s = fromMemory;
+        ok();
+    } else {
+        fail();
+    }
 }
 
 
 
 ADC_MODE(ADC_VCC); // Measure power supply for debugging
+
+// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+OneWire oneWire(ONE_WIRE_BUS);
+
+// Pass our oneWire reference to Dallas Temperature.
+DallasTemperature sensors(&oneWire);
+
+// arrays to hold device addresses
+DeviceAddress insideThermometer, outsideThermometer;
+
 
 void initSensors() {
     sfprintln("initSensors");
@@ -195,10 +222,31 @@ void initSensors() {
     sensor1.initSHT20(sht1comms);
     error |= testSensor(sensor1);
 
-    sfprint("Testing sensor2 on pin "); sprintln(Sht2sdaPin);
-    sht2comms.begin(Sht2sdaPin,Sht2sdcPin);
-    sensor2.initSHT20(sht2comms);
-    error |= testSensor(sensor2);
+//    sfprint("Testing sensor2 on pin "); sprintln(Sht2sdaPin);
+//    sht2comms.begin(Sht2sdaPin,Sht2sdcPin);
+//    sensor2.initSHT20(sht2comms);
+//    error |= testSensor(sensor2);
+    
+    sensors.begin();
+
+    // locate devices on the bus
+    Serial.print("Locating devices...");
+    Serial.print("Found ");
+    Serial.print(sensors.getDeviceCount(), DEC);
+    Serial.println(" devices.");
+    if (!sensors.getAddress(outsideThermometer, 0)) Serial.println("Unable to find address for Temp 1");
+    if (!sensors.getAddress(insideThermometer, 1)) Serial.println("Unable to find address for Temp 2");
+    
+    sensors.setResolution(insideThermometer, TEMPERATURE_PRECISION);
+    sensors.setResolution(outsideThermometer, TEMPERATURE_PRECISION);
+
+    Serial.print("Device 0 Resolution: ");
+    Serial.print(sensors.getResolution(insideThermometer), DEC);
+    Serial.println();
+
+    Serial.print("Device 1 Resolution: ");
+    Serial.print(sensors.getResolution(outsideThermometer), DEC);
+    Serial.println();
 
     sfprint("initSensors .. ");
     if (error) fail();

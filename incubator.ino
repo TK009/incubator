@@ -11,13 +11,26 @@ int numberOfAverageNmubers = 0;
 
 
 
+double readTemperatureNew(DeviceAddress deviceAddress)
+{
+  float tempC = sensors.getTempC(deviceAddress);
+  if(tempC == DEVICE_DISCONNECTED_C) 
+  {
+    //Serial.println("Error: Could not read temperature data");
+    return 255;
+  }
+  //Serial.print("Temp C: ");
+  //Serial.println(tempC);
+  
+  return tempC;
+}
 
 double readTemperatures() {
     sht1comms.begin(Sht1sdaPin,Sht1sdcPin);
     double temp1 = sensor1.readTemperature();
-    sht2comms.begin(Sht2sdaPin,Sht2sdcPin);
-    double temp2 = sensor2.readTemperature();
-    sprint(temp1); sprint("C "); sprint(temp2); sprint("C ");
+    //sht2comms.begin(Sht2sdaPin,Sht2sdcPin);
+    double temp2 = 255;//sensor2.readTemperature();
+    //sprint(temp1); sprint("C "); sprint(temp2); sprint("C ");
 
     if (temp1 < 130 && temp2 < 130) return (temp1 + temp2) * 0.5;
     if (temp1 < 130) return temp1;
@@ -29,9 +42,9 @@ double readTemperatures() {
 double readHumidities() {
     sht1comms.begin(Sht1sdaPin,Sht1sdcPin);
     double temp1 = sensor1.readHumidity();
-    sht2comms.begin(Sht2sdaPin,Sht2sdcPin);
-    double temp2 = sensor2.readHumidity();
-    sprint(temp1); sprint("% "); sprint(temp2); sprint("% ");
+    //sht2comms.begin(Sht2sdaPin,Sht2sdcPin);
+    double temp2 = 255;//sensor2.readHumidity();
+    //sprint(temp1); sprint("% "); sprint(temp2); sprint("% ");
 
     if (temp1 < 100 && temp2 < 100) return (temp1 + temp2) * 0.5;
     if (temp1 < 100) return temp1;
@@ -68,14 +81,41 @@ void initHeater() {
 }
 
 void updateHeater() {
-    // read sensors
-    TemperatureInput = readTemperatures();
+    // read sensors  
+    
+    double TempSum = 0;
+    int Counter = 0;
+    
+    Temp0 = readTemperatures();
+    if (Temp0 < 81) {
+      TempSum += Temp0;
+      Counter++;
+    }
+    //else { sfprintln("Invalid input on the big thermo/humidity meter"); }
+    
+    Temp1 = readTemperatureNew(outsideThermometer);
+    if (Temp1 < 81){
+      TempSum += Temp1;
+      Counter++;
+    }
+    //else { sfprintln("Invalid input on thermometer 1"); }
+
+    Temp2 = readTemperatureNew(insideThermometer);
+    if (Temp2 < 81) {
+      TempSum += Temp2;
+      Counter++;
+    }
+    //else { sfprintln("Invalid input on thermometer 2"); }
+
+    TemperatureInput = TempSum/Counter;
     Humidity = readHumidities();
+    sensors.requestTemperatures();
 
     // update heater
     heaterController.Compute();
     analogWrite(HeaterPin, (int) (HeaterOutput * PWMRANGE));
-    sfprint("Input: "); sprint(TemperatureInput); sfprint("C Heatpower: ");
+    sfprint("Temp0 "); sprint(Temp0); sfprint("C, Temp1 "); sprint(Temp1); sfprint("C, Temp2 "); sprint(Temp2);
+    sfprint("C Humi: "); sprint(Humidity); sfprint("Input: "); sprint(TemperatureInput); sfprint("C Heatpower: ");
     sprintln(HeaterOutput);
     shouldMeasure = false;
 }
@@ -165,9 +205,11 @@ void fetchHandler(AsyncWebServerRequest *request){
     auto stream = request->beginResponseStream("application/json");
     stream->printf(
         ("{\"setpoint\": %f, \"maxpower\": %f, \"kp\": %f, \"ki\": %f, \"kd\": %f,"
-        " \"turnangle\": %i, \"turntime\": %f, \"temp\": %f, \"humi\": %f, \"power\": %f}"),
+        " \"turnangle\": %i, \"turntime\": %f, \"temp\": %f, \"humi\": %f, \"power\": %f,"
+        "\"tempNew1\" : %f, \"tempNew2\" : %f, \"tempOld\": %f}"),
         s.Setpoint, s.MaxHeater, heaterController.GetKp(), heaterController.GetKi(), heaterController.GetKd(),
-        s.TurnDegrees, s.TurnTime/60, TemperatureInput, Humidity, HeaterOutput
+        s.TurnDegrees, s.TurnTime/60, TemperatureInput, Humidity, HeaterOutput, Temp1, Temp2,
+        Temp0
     );
     request->send(stream);
 }
@@ -219,3 +261,15 @@ void loop() {
 
     ArduinoOTA.handle();
 }
+
+
+
+
+
+
+
+
+
+
+
+

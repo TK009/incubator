@@ -18,6 +18,8 @@ LIBS += \
 	DFRobot_SHT20 \
 	Arduino-PID-Library \
 	justwifi \
+	Arduino-Temperature-Control-Library \
+	OneWire \
 	.
 	#esp8266-SNTPClock \
 	#$(ESP_LIBS)/Ticker \
@@ -33,10 +35,12 @@ FS_DIR=data
 # UPLOAD_SPEED=460800
 #
 # EXTRAFLAGS=-DDEBUG_ESP_PORT=Serial
-
+EXTRAFLAGS=-Wall
 
 ESP_ADDR = incubator
 ESP_PWD = tipumuusi
+OTA_ADDR = incubator
+OTA_PWD = tipumuusi
 
 
 include $(HOME)/coding/hacks/makeEspArduino/makeEspArduino.mk
